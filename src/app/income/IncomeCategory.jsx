@@ -56,7 +56,7 @@ const IncomeCategory = (props) => {
     currentPage: 1,
   });
   const [incomeCategories, setIncomeCategories] = useState({
-    categories: {},
+    categories: [],
     fetching: true,
   });
   const [submitting, setSubmitting] = useState(false);
@@ -66,17 +66,16 @@ const IncomeCategory = (props) => {
   }, [datatable]);
 
   const requestIncomeCategories = async () => {
-    setIncomeCategories({ ...incomeCategories, fetching: true });
+    // setIncomeCategories({ ...incomeCategories, fetching: true });
     await axios
       .get(incomeApiEndpoints.incomeCategory + "/all")
       .then((response) => {
         console.log(response.data);
         if (response.data) {
-          setIncomeCategories({
-            ...incomeCategories,
-            categories: response.data,
+          setIncomeCategories((prev) => ({
+            categories: [...prev.categories, response.data],
             fetching: false,
-          });
+          }));
         }
       })
       .catch((error) => {
