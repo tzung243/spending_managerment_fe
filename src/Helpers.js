@@ -1,6 +1,6 @@
 export const loadState = () => {
   try {
-    const serialisedState = localStorage.getItem('expense-tracker-state');
+    const serialisedState = localStorage.getItem("expense-tracker-state");
     if (serialisedState === null) {
       return undefined;
     }
@@ -13,7 +13,7 @@ export const loadState = () => {
 export const saveState = (state) => {
   try {
     const serialisedState = JSON.stringify(state);
-    localStorage.setItem('expense-tracker-state', serialisedState);
+    localStorage.setItem("expense-tracker-state", serialisedState);
   } catch (error) {
     // Ignore write errors.
   }
@@ -27,8 +27,7 @@ export const getItem = (item, def = undefined) => {
       return def;
     }
     return JSON.parse(localItem);
-  }
-  catch (e) {
+  } catch (e) {
     return undefined;
   }
 };
@@ -45,5 +44,7 @@ export const removeItem = (item) => {
 
 // Check if user logged in from localstorage
 export const isLoggedIn = () => {
-  return getItem('access_token') && getItem('token_created') && getItem('expires_in');
+  return (
+    getItem("access_token") && getItem("token_created") && getItem("expires_in")
+  );
 };

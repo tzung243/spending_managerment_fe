@@ -5,6 +5,7 @@ import * as dayjs from "dayjs";
 import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
+import { Tooltip } from "primereact/tooltip";
 
 import { Messages } from "primereact/messages";
 import { Card } from "primereact/card";
@@ -14,12 +15,17 @@ import { Column } from "primereact/column";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
-
+import { incomeApiEndpoints } from "./../../API";
 import CurrencySidebar from "./../common/CurrencySidebar";
+import { IncomeCategory } from "./../income/IncomeCategory";
 
 import axios from "./../../Axios";
 import { expenseApiEndpoints } from "./../../API";
 import { useTracked } from "./../../Store";
+const typeMap = {
+  INCOME: 1,
+  EXPENSE: 2,
+};
 
 const StyledSwal = Swal.mixin({
   customClass: {
@@ -45,53 +51,165 @@ let messages;
 
 const addExpenseValidationSchema = yup.object().shape({
   expense_date: yup.string().required("Expense date field is required"),
-  category: yup.object().required("Expense category field is required"),
+  wallet: yup.object().nullable().required("Wallet field is required"),
+  category: yup
+    .object()
+    .nullable()
+    .required("Expense category field is required"),
+  type: yup.string().nullable().required("Type field is required"),
   amount: yup.string().required("Expense amount field is required"),
-  spent_on: yup
-    .string()
-    .required("Spent on field is required")
-    .max(100, "Spent on must be at most 100 characters"),
-  remarks: yup.string().max(200, "Remarks must be at most 200 characters"),
 });
 
 const Expense = (props) => {
-  const [state] = useTracked();
-  const { register, handleSubmit, setValue, errors, setError, reset, control } =
-    useForm({
-      validationSchema: addExpenseValidationSchema,
+  const [incomeCategories, setIncomeCategories] = useState({
+    categories: [],
+    fetching: true,
+  });
+
+  const deleteIncomeCategory = (data) => {
+    console.log(data);
+    StyledSwal.fire({
+      title: "Are you sure?",
+      text: `Confirm to delete wallet ${data.name}.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText:
+        '<span class="pi pi-trash p-button-icon-left"></span><span class="p-button-text">Delete</span>',
+      cancelButtonText:
+        '<span class="pi pi-ban p-button-icon-left"></span><span class="p-button-text">No</span>',
+      // confirmButtonColor: '#f76452',
+      // cancelButtonColor: '#3085d6',
+      focusConfirm: false,
+      focusCancel: true,
+    }).then((result) => {
+      if (result.value) {
+        axios
+          .delete(incomeApiEndpoints.incomeCategory + "/" + data.id, {})
+          .then((response) => {
+            // console.log(response.data);
+            if (response.status === 200) {
+              requestIncomeCategories();
+              messages.clear();
+              messages.show({
+                severity: "success",
+                detail: "Your wallet " + data.name + " deleted successfully.",
+                sticky: false,
+                closable: false,
+                life: 5000,
+              });
+            }
+          })
+          .catch((error) => {
+            // console.log('error', error.response);
+            if (error.response.status === 404) {
+              messages.clear();
+              messages.show({
+                severity: "error",
+                detail: "Wallet " + data.name + " in use.",
+                sticky: true,
+                closable: true,
+                life: 5000,
+              });
+            }
+
+            if (error.response.status === 401) {
+              messages.clear();
+              messages.show({
+                severity: "error",
+                detail: "Something went wrong. Try again.",
+                sticky: true,
+                closable: true,
+                life: 5000,
+              });
+            }
+          });
+      }
     });
+  };
+
+  const requestIncomeCategories = async () => {
+    // console.log("requestIncomeCategories");
+    setIncomeCategories({ ...incomeCategories, fetching: true });
+    await axios
+      .get(incomeApiEndpoints.incomeCategory + "/all")
+      .then((response) => {
+        // console.log(response);
+        if (response.data) {
+          setIncomeCategories({
+            ...incomeCategories,
+            categories: response.data,
+            fetching: false,
+          });
+        }
+      })
+      .catch((error) => {
+        // console.log(error);
+      });
+  };
+
+  const [state] = useTracked();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    errors,
+    setError,
+    reset,
+    control,
+    watch,
+  } = useForm({
+    validationSchema: addExpenseValidationSchema,
+  });
   const [datatable, setDatatable] = useState({
-    sortField: "id",
+    sortField: "date",
     sortOrder: -1,
-    rowsPerPage: 5,
-    currentPage: 1,
   });
   const [currencyVisible, setCurrencyVisible] = useState(false);
   const [expenseSummary, setExpenseSummary] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [expenseCategories, setExpenseCategories] = useState([]);
+  const [wallet, setWallet] = useState({
+    wallets: [],
+    fetching: true,
+  });
   const [expense, setExpense] = useState({ expenses: {}, fetching: true });
-
   useEffect(() => {
+    requestIncomeCategories();
     requestExpenseSummary();
     requestExpenseCategory();
+    requestWallet();
   }, []);
 
   useEffect(() => {
     requestExpense();
   }, [datatable]);
 
-  const requestExpenseCategory = async () => {
+  const requestWallet = async () => {
+    setWallet({ ...wallet, fetching: true });
     await axios
-      .get(
-        expenseApiEndpoints.expenseCategory +
-          "?sort_col=category_name&sort_order=asc",
-        {}
-      )
+      .get(incomeApiEndpoints.incomeCategory + "/all")
       .then((response) => {
         // console.log(response.data);
-        if (response.data.data.length > 0) {
-          setExpenseCategories(response.data.data);
+        if (response.data) {
+          setWallet({
+            ...wallet,
+            wallets: response.data,
+            fetching: false,
+          });
+        }
+      })
+      .catch((error) => {
+        // console.log(error);
+      });
+  };
+
+  const requestExpenseCategory = async () => {
+    await axios
+      .get(expenseApiEndpoints.expenseCategory, {})
+      .then((response) => {
+        // console.log(response.data);
+        if (response.data.length > 0) {
+          setExpenseCategories(response.data);
         } else {
         }
       })
@@ -100,24 +218,21 @@ const Expense = (props) => {
       });
   };
 
+  // console.log(expenseCategories);
   const requestExpense = async () => {
     setExpense({ ...expense, fetching: true });
     await axios
       .get(
-        expenseApiEndpoints.expense +
-          "?page=" +
-          datatable.currentPage +
-          "&sort_col=" +
+        expenseApiEndpoints.create +
+          "?sort_col=" +
           datatable.sortField +
-          "&per_page=" +
-          datatable.rowsPerPage +
           "&sort_order=" +
           (datatable.sortOrder > 0 ? "asc" : "desc"),
         {}
       )
       .then((response) => {
-        // console.log('success', response.data);
-        if (response.data.data) {
+        // console.log("success", response.data);
+        if (response.data) {
           setExpense({
             ...expense,
             expenses: response.data,
@@ -139,8 +254,8 @@ const Expense = (props) => {
     await axios
       .get(expenseApiEndpoints.summary, {})
       .then((response) => {
-        // console.log(response.data);
-        setExpenseSummary(response.data.data);
+        // console.log(response);
+        setExpenseSummary(response.data);
       })
       .catch((error) => {
         console.log(error);
@@ -201,31 +316,39 @@ const Expense = (props) => {
   };
 
   const submitExpense = (data) => {
-    data.category_id = data.category.id;
-    data.currency_id = state.currentCurrency.id;
-    data.expense_date = dayjs(data.expense_date).format("YYYY-MM-DD HH:mm:ss");
+    // console.log(data.category);
+    data.label_id = data.category.id;
+    // data.currency_id = state.currentCurrency.id;
+    data.wallet_id = data.wallet.id;
+    data.date = dayjs(data.expense_date).format("YYYY-MM-DD HH:mm:ss");
+    data.description = data.remarks;
+    data.type = typeMap[data.type];
+    data.amount = parseInt(data.amount);
+    // console.log(data);
     axios
-      .post(expenseApiEndpoints.expense, JSON.stringify(data))
+      .post(expenseApiEndpoints.create, JSON.stringify(data))
       .then((response) => {
         // console.log('success');
-        if (response.status === 201) {
+        // console.log(response.data);
+        if (response.status === 200) {
+          // console.log(response.data);
+
           reset();
           setSubmitting(false);
-          setValue(
-            "expense_date",
-            dayjs(response.data.request.expense_date).toDate()
-          );
+          setValue("expense_date", dayjs(response.data.date).toDate());
           requestExpense();
           requestExpenseSummary();
-
           messages.show({
             severity: "success",
-            detail:
-              "Your expense on " + response.data.request.spent_on + " added.",
+            detail: "Your expense added.",
             sticky: false,
             closable: false,
             life: 5000,
           });
+          control.setValue("expense_date", new Date());
+          control.setValue("category", null);
+          control.setValue("wallet", null);
+          control.setValue("type", null);
         }
       })
       .catch((error) => {
@@ -254,18 +377,17 @@ const Expense = (props) => {
   };
 
   const renderExpenseSummary = (data) => {
-    if (data && data.length > 0) {
-      return data.map((item, index) => {
-        return (
-          <div key={index}>
-            <div className="color-link text-center">
-              {item.total.toLocaleString()}{" "}
-              <span className="color-title">{item.currency_code + "."}</span>
-            </div>
-            <hr />
+    // console.log(data);
+    if (data) {
+      return (
+        <div>
+          <div className="color-link text-center">
+            {data.toLocaleString()}
+            <span className="color-title">{" VND."}</span>
           </div>
-        );
-      });
+          <hr />
+        </div>
+      );
     } else {
       return (
         <div>
@@ -340,7 +462,10 @@ const Expense = (props) => {
       </div>
 
       <div className="p-grid">
-        <div className="p-col-12 p-md-6">
+        <div
+          className="p-col-12 p-md-5
+        "
+        >
           <Card className="rounded-border">
             <div>
               <div className="p-card-title p-grid p-nogutter p-justify-between">
@@ -376,10 +501,35 @@ const Expense = (props) => {
               </div>
               <div className="p-fluid">
                 <Controller
+                  name="wallet"
+                  onChange={([e]) => {
+                    return e.value;
+                  }}
+                  defaultValue={null}
+                  control={control}
+                  as={
+                    <Dropdown
+                      filter={true}
+                      filterPlaceholder="Search here"
+                      showClear={true}
+                      filterInputAutoFocus={false}
+                      options={wallet.wallets}
+                      style={{ width: "100%" }}
+                      placeholder="Wallet"
+                      optionLabel="name"
+                    />
+                  }
+                />
+                {/* {console.log(wallet.wallets.map((item) => item.name))} */}
+                <p className="text-error">{errors.wallet?.message}</p>
+              </div>
+              <div className="p-fluid">
+                <Controller
                   name="category"
                   onChange={([e]) => {
                     return e.value;
                   }}
+                  defaultValue={null}
                   control={control}
                   as={
                     <Dropdown
@@ -390,21 +540,33 @@ const Expense = (props) => {
                       options={expenseCategories}
                       style={{ width: "100%" }}
                       placeholder="Expense Category"
-                      optionLabel="category_name"
+                      optionLabel="label_name"
                     />
                   }
                 />
+                {/* {console.log(expenseCategories)} */}
                 <p className="text-error">{errors.category?.message}</p>
               </div>
               <div className="p-fluid">
-                <input
-                  type="text"
-                  ref={register}
-                  placeholder="Spent On"
-                  name="spent_on"
-                  className="p-inputtext p-component p-filled"
+                <Controller
+                  name="type"
+                  onChange={([e]) => {
+                    return e.value;
+                  }}
+                  defaultValue={null}
+                  control={control}
+                  as={
+                    <Dropdown
+                      showClear={true}
+                      filterInputAutoFocus={false}
+                      options={["INCOME", "EXPENSE"]}
+                      style={{ width: "100%" }}
+                      placeholder="Type"
+                    />
+                  }
                 />
-                <p className="text-error">{errors.spent_on?.message}</p>
+                {/* {console.log(expenseCategories)} */}
+                <p className="text-error">{errors.type?.message}</p>
               </div>
               <div className="p-fluid">
                 <div className="p-inputgroup">
@@ -416,15 +578,6 @@ const Expense = (props) => {
                     placeholder="Amount"
                     name="amount"
                     className="p-inputtext p-component p-filled"
-                  />
-                  <Button
-                    label={`${
-                      state.currencies.length === 0
-                        ? "loading"
-                        : state.currentCurrency.currency_code
-                    }`}
-                    type="button"
-                    onClick={(e) => setCurrencyVisible(true)}
                   />
                 </div>
                 <p className="text-error">{errors.amount?.message}</p>
@@ -452,7 +605,95 @@ const Expense = (props) => {
           </Card>
         </div>
 
-        <div className="p-col-12 p-md-6">
+        <div className="p-col-12 p-md-7">
+          <Card className="rounded-border">
+            <div className="p-grid">
+              <div className="p-col-6">
+                <div className="p-card-title p-grid p-nogutter p-justify-between">
+                  View Wallet
+                </div>
+                <div className="p-card-subtitle">
+                  Here are list of my wallet.
+                </div>
+              </div>
+              <div className="p-col-6" align="right">
+                {incomeCategories?.fetching ? (
+                  <ProgressSpinner
+                    style={{ height: "25px", width: "25px" }}
+                    strokeWidth={"4"}
+                  />
+                ) : (
+                  ""
+                )}
+              </div>
+            </div>
+            <br />
+            <DataTable
+              value={incomeCategories.categories}
+              sortField={datatable.sortField}
+              sortOrder={datatable.sortOrder}
+              responsive={true}
+              // paginator={true}
+              totalRecords={incomeCategories.categories.total}
+              lazy={true}
+              scrollable
+              scrollHeight="400px"
+              first={incomeCategories.categories.from - 1}
+              onPage={(e) => {
+                // console.log(e);
+                setDatatable({
+                  ...datatable,
+                  currentPage: e.page + 1,
+                  rowsPerPage: e.rows,
+                });
+              }}
+              onSort={(e) => {
+                // console.log(e);
+                setDatatable({
+                  ...datatable,
+                  sortField: e.sortField,
+                  sortOrder: e.sortOrder,
+                });
+              }}
+              className="text-center"
+            >
+              <Column field="name" header="Wallet Name" />
+
+              <Column
+                field="type"
+                header="Type"
+                body={(rowData) => (rowData.type === 1 ? "CASH" : "BANK")}
+              />
+              <Column field="amount" header="Amount" />
+              <Column
+                body={(rowData, column) => {
+                  console.log(rowData);
+                  return (
+                    <div>
+                      <Link to={`/income/category/${rowData.id}/edit`}>
+                        <Button
+                          label="Edit"
+                          value={rowData.id}
+                          icon="pi pi-pencil"
+                          className="p-button-raised p-button-rounded p-button-info"
+                        />
+                      </Link>
+                      <Button
+                        label="Delete"
+                        onClick={() => deleteIncomeCategory(rowData)}
+                        icon="pi pi-trash"
+                        className="p-button-raised p-button-rounded p-button-danger"
+                      />
+                    </div>
+                  );
+                }}
+                header="Action"
+                style={{ textAlign: "center", width: "8em" }}
+              />
+            </DataTable>
+          </Card>
+        </div>
+        <div className="p-col-12 p-md-12">
           <Card className="rounded-border">
             <div className="p-grid">
               <div className="p-col-6">
@@ -475,27 +716,28 @@ const Expense = (props) => {
               </div>
             </div>
             <br />
+            {/* <Tooltip
+              target=".p-dt-tooltip"
+              content="Edit"
+              mouseTrack
+              mouseTrackLeft={10}
+            /> */}
             <DataTable
-              value={expense.expenses.data}
+              value={expense.expenses}
               sortField={datatable.sortField}
               sortOrder={datatable.sortOrder}
               responsive={true}
-              paginator={true}
-              rows={datatable.rowsPerPage}
-              rowsPerPageOptions={[5, 10, 20]}
+              // paginator={true}
+              // rows={datatable.rowsPerPage}
+              // rowsPerPageOptions={[5, 10, 20]}
               totalRecords={expense.expenses.total}
               lazy={true}
+              scrollable
+              scrollHeight="400px"
               first={expense.expenses.from - 1}
-              onPage={(e) => {
-                // console.log(e);
-                setDatatable({
-                  ...datatable,
-                  currentPage: e.page + 1,
-                  rowsPerPage: e.rows,
-                });
-              }}
               onSort={(e) => {
                 // console.log(e);
+                console.log(e.sortField);
                 setDatatable({
                   ...datatable,
                   sortField: e.sortField,
@@ -504,29 +746,41 @@ const Expense = (props) => {
               }}
               className="text-center"
             >
-              <Column field="id" header="Serial" sortable={true} />
-              <Column field="spent_on" header="Spent On" sortable={true} />
-              <Column field="category_name" header="Category" sortable={true} />
+              {/* <Column field="id" header="Serial" /> */}
+              <Column field="label_name" header="Category" />
+              <Column field="wallet_name" header="Wallet" />
+              <Column
+                field="type"
+                header="Type"
+                body={(rowData) =>
+                  Object.keys(typeMap).find(
+                    (key) => typeMap[key] === rowData.type
+                  )
+                }
+              />
+
               <Column
                 field="amount"
                 header="Amount"
                 sortable={true}
                 body={(rowData, column) => {
-                  return (
-                    rowData.amount.toLocaleString() +
-                    " " +
-                    rowData.currency_name
-                  );
+                  // console.log(rowData);
+                  return rowData.amount.toLocaleString();
                 }}
               />
               <Column
-                field="transaction_date"
+                // className="p-dt-tooltip"
+                field="description"
+                header="Description"
+                bodyStyle={{ maxHeight: "400px", overflowY: "auto" }}
+              />
+
+              <Column
+                field="date"
                 header="Date"
                 sortable={true}
                 body={(rowData, column) => {
-                  return dayjs(rowData.transaction_date).format(
-                    "YYYY-MM-DD hh:mm a"
-                  );
+                  return dayjs(rowData.date).format("YYYY-MM-DD hh:mm a");
                 }}
               />
               <Column

@@ -13,10 +13,12 @@ import axios from "./../../Axios";
 let messages;
 
 const incomeCategoryValidationSchema = yup.object().shape({
-  category_name: yup
+  name: yup
     .string()
-    .required("Category name field is required")
-    .max(100, "Category name must be at most 100 characters"),
+    .required("Wallet name field is required")
+    .max(100, "Wallet name must be at most 100 characters"),
+  type: yup.number().required("Type field is required"),
+  amount: yup.number().required("Amount field is required"),
 });
 
 const EditIncomeCategory = (props) => {
@@ -39,7 +41,9 @@ const EditIncomeCategory = (props) => {
       )
       .then((response) => {
         // console.log('success', response.data);
-        setValue("category_name", response.data.category_name);
+        setValue("name", response.data.name);
+        setValue("type", response.data.type);
+        setValue("amount", response.data.amount);
       })
       .catch((error) => {
         console.log("error", error.response);
@@ -72,7 +76,7 @@ const EditIncomeCategory = (props) => {
 
           messages.show({
             severity: "success",
-            detail: "Your income category info updated successfully.",
+            detail: "Your wallet info updated successfully.",
             sticky: false,
             closable: false,
             life: 5000,
@@ -122,26 +126,46 @@ const EditIncomeCategory = (props) => {
           <Card className="rounded-border">
             <div>
               <div className="p-card-title p-grid p-nogutter p-justify-between">
-                Edit Income Category
+                Edit Wallet
               </div>
               <div className="p-card-subtitle">
-                Edit selected income category information below.
+                Edit selected wallet information below.
               </div>
             </div>
             <br />
             <form onSubmit={handleSubmit(submitUpdateIncomeCategory)}>
               <div className="p-fluid">
-                <label>Category Name</label>
-                <div className="p-fluid">
-                  <input
-                    type="text"
-                    ref={register}
-                    placeholder="Category name"
-                    name="category_name"
-                    className="p-inputtext p-component p-filled"
-                  />
-                  <p className="text-error">{errors.category_name?.message}</p>
-                </div>
+                <input
+                  // defaultValue={}
+                  type="text"
+                  placeholder="Wallet name"
+                  name="name"
+                  ref={register}
+                  className="p-inputtext p-component p-filled"
+                />
+                <p className="text-error"></p>
+              </div>
+              <div className="p-fluid">
+                <select
+                  name="type"
+                  id="type"
+                  ref={register}
+                  className="p-inputtext p-component p-filled"
+                >
+                  <option value="1">CASH</option>
+                  <option value="2">BANK</option>
+                </select>
+                <p className="text-error"></p>
+              </div>
+              <div className="p-fluid">
+                <input
+                  ref={register}
+                  type="text"
+                  placeholder="Amount"
+                  name="amount"
+                  className="p-inputtext p-component p-filled"
+                />
+                <p className="text-error"></p>
               </div>
               <div className="p-fluid">
                 <Button

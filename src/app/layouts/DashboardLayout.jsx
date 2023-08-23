@@ -36,30 +36,18 @@ const isDesktop = () => {
 
 const menu = [
   {
-    label: "Dashboard",
-    url: "/dashboard",
-    icon: "pi pi-fw pi-home",
+    label: "Manage",
+    url: "/expense",
+    icon: "pi pi-fw pi-plus",
     command: () => {},
   },
   {
-    label: "Expense",
-    url: "",
-    icon: "pi pi-fw pi-dollar",
-    items: [
-      {
-        label: "Manage",
-        url: "/expense",
-        icon: "pi pi-fw pi-plus",
-        command: () => {},
-      },
-      {
-        label: "Category",
-        url: "/expense/category",
-        icon: "pi pi-fw pi-list",
-        command: () => {},
-      },
-    ],
+    label: "Category",
+    url: "/expense/category",
+    icon: "pi pi-fw pi-list",
+    command: () => {},
   },
+
   {
     label: "Wallet",
     url: "/income/category",

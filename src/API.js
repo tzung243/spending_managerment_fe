@@ -17,13 +17,14 @@ export const userApiEndpoints = {
 };
 
 export const expenseApiEndpoints = {
-  expense: "/api/v1/expense",
+  create: "/transaction",
+  expense: "/transaction/expense",
   expenseCategory: "/transaction_label/",
-  summary: "/api/v1/expense/summary",
+  summary: "/transaction/summary",
 };
 
 export const incomeApiEndpoints = {
-  income: "/api/v1/income",
+  income: "transaction/income",
   incomeCategory: "/wallet",
   summary: "/api/v1/income/summary",
 };
@@ -35,11 +36,12 @@ export const currencyApiEndpoints = {
 export const reportApiEndpoints = {
   monthlyExpenseSummary: "/api/v1/report/expense/months/summary",
   monthlyIncomeSummary: "/api/v1/report/income/months/summary",
-  transaction: "/api/v1/report/transaction",
+  transaction: "/analytics/report",
 };
 
 export const chartApiEndpoints = {
   incomeExpenseCategories: "/api/v1/chart/income-expense/category",
-  incomeExpenseMonthWise: "/api/v1/chart/income-expense/month-wise",
+  incomeExpenseMonthWise: "/analytics/monthly",
+  category: "/analytics/label",
   incomeExpenseCategoryWise: "/api/v1/chart/income-expense/category-wise",
 };

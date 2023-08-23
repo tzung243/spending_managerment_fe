@@ -55,7 +55,7 @@ const ExpenseCategory = (props) => {
     currentPage: 1,
   });
   const [expenseName, setExpenseName] = useState({
-    name: [],
+    categories: [],
     fetching: true,
   });
   const [submitting, setSubmitting] = useState(false);
@@ -73,7 +73,7 @@ const ExpenseCategory = (props) => {
         if (response.data) {
           setExpenseName({
             ...expenseName,
-            name: response.data,
+            categories: response.data,
             fetching: false,
           });
         }
@@ -106,13 +106,11 @@ const ExpenseCategory = (props) => {
             // console.log(response.data);
             if (response.status === 200) {
               requestExpenseNames();
-
+              messages.clear();
               messages.show({
                 severity: "success",
                 detail:
-                  "Your expense category " +
-                  data.label_name +
-                  " deleted successfully.",
+                  "Your expense category " + data + " deleted successfully.",
                 sticky: false,
                 closable: false,
                 life: 5000,
@@ -126,6 +124,17 @@ const ExpenseCategory = (props) => {
               messages.show({
                 severity: "error",
                 detail: "Expense category " + data.label_name + " in use.",
+                sticky: true,
+                closable: true,
+                life: 5000,
+              });
+            }
+
+            if (error.response.status === 400) {
+              messages.clear();
+              messages.show({
+                severity: "error",
+                detail: error.response.data.detail,
                 sticky: true,
                 closable: true,
                 life: 5000,
@@ -154,19 +163,19 @@ const ExpenseCategory = (props) => {
       .then((response) => {
         // console.log("success", response.status);
         if (response.status === 200) {
+          // console.log("success", response.data);
+          requestExpenseNames();
+          messages.clear();
           messages.show({
             severity: "success",
-            detail:
-              "New expense category " +
-              response.data.request.label_name +
-              " added.",
+            detail: "New expense category " + response.data + " added.",
             sticky: false,
             closable: false,
             life: 5000,
           });
           reset();
           setSubmitting(false);
-          requestExpenseNames();
+          // requestExpenseNames();
         }
       })
       .catch((error) => {
@@ -266,20 +275,19 @@ const ExpenseCategory = (props) => {
               </div>
             </div>
             <br />
-
             <DataTable
-              value={expenseName.name}
+              value={expenseName.categories}
               sortField={datatable.sortField}
               sortOrder={datatable.sortOrder}
               responsive={true}
-              paginator={true}
-              rows={datatable.rowsPerPage}
-              rowsPerPageOptions={[5, 10, 20]}
               totalRecords={expenseName.total}
               lazy={true}
-              first={expenseName.from - 1}
+              scrollable
+              scrollHeight="400px"
+              // first={expenseName.from - 1}
+
               onPage={(e) => {
-                console.log(expenseName);
+                // console.log(expenseName.categories);
                 // console.log(e);
                 setDatatable({
                   ...datatable,
@@ -301,8 +309,9 @@ const ExpenseCategory = (props) => {
               <Column
                 field="label_name"
                 header="Category Name"
-                sortable={true}
                 body={(rowData, column) => {
+                  // console.log(rowData);
+
                   return (
                     <p
                       className="text-center font-bold"
@@ -310,17 +319,17 @@ const ExpenseCategory = (props) => {
                         fontWeight: "bold",
                       }}
                     >
-                      {rowData}
+                      {rowData.label_name}
                     </p>
                   );
                 }}
               />
               <Column
                 body={(rowData, column) => {
-                  // console.log(rowData);
+                  // console.log(rowData.id);
                   return (
                     <div>
-                      <Link to={`/expense/category/${rowData}/edit`}>
+                      <Link to={`/expense/category/${rowData.id}/edit`}>
                         <Button
                           label="Edit"
                           value={rowData.id}
@@ -330,7 +339,9 @@ const ExpenseCategory = (props) => {
                       </Link>
                       <Button
                         label="Delete"
-                        onClick={() => deleteExpenseCategory(rowData)}
+                        onClick={() =>
+                          deleteExpenseCategory(rowData.label_name)
+                        }
                         icon="pi pi-trash"
                         className="p-button-raised p-button-rounded p-button-danger"
                       />

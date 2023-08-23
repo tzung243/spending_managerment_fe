@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import * as yup from "yup";
 import { Link } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import Swal from "sweetalert2";
 
 import { Messages } from "primereact/messages";
@@ -59,6 +59,7 @@ const IncomeCategory = (props) => {
     categories: [],
     fetching: true,
   });
+
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -66,28 +67,29 @@ const IncomeCategory = (props) => {
   }, [datatable]);
 
   const requestIncomeCategories = async () => {
-    // setIncomeCategories({ ...incomeCategories, fetching: true });
+    setIncomeCategories({ ...incomeCategories, fetching: true });
     await axios
       .get(incomeApiEndpoints.incomeCategory + "/all")
       .then((response) => {
-        console.log(response.data);
+        // console.log(response.data);
         if (response.data) {
-          setIncomeCategories((prev) => ({
-            categories: [...prev.categories, response.data],
+          setIncomeCategories({
+            ...incomeCategories,
+            categories: response.data,
             fetching: false,
-          }));
+          });
         }
       })
       .catch((error) => {
-        console.log(error);
+        // console.log(error);
       });
   };
 
   const deleteIncomeCategory = (data) => {
-    // console.log(data);
+    console.log(data);
     StyledSwal.fire({
       title: "Are you sure?",
-      text: `Confirm to delete income category ${data.category_name}.`,
+      text: `Confirm to delete wallet ${data.name}.`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText:
@@ -106,13 +108,10 @@ const IncomeCategory = (props) => {
             // console.log(response.data);
             if (response.status === 200) {
               requestIncomeCategories();
-
+              messages.clear();
               messages.show({
                 severity: "success",
-                detail:
-                  "Your income category " +
-                  data.category_name +
-                  " deleted successfully.",
+                detail: "Your wallet " + data.name + " deleted successfully.",
                 sticky: false,
                 closable: false,
                 life: 5000,
@@ -125,7 +124,7 @@ const IncomeCategory = (props) => {
               messages.clear();
               messages.show({
                 severity: "error",
-                detail: "Income category " + data.category_name + " in use.",
+                detail: "Wallet " + data.name + " in use.",
                 sticky: true,
                 closable: true,
                 life: 5000,
@@ -150,27 +149,24 @@ const IncomeCategory = (props) => {
   // console.log(watch("name"));
 
   const submitWallet = (data) => {
-    console.log(data);
-    setSubmitting(true);
+    // console.log(data);
+    // setSubmitting(true);
     axios
       .post(incomeApiEndpoints.incomeCategory, JSON.stringify(data))
       .then((response) => {
-        console.log("success", response.data);
-
+        // console.log("success", response.data);
         if (response.status === 200) {
+          requestIncomeCategories();
+          messages.clear();
           messages.show({
             severity: "success",
-            detail:
-              "New income category " +
-              response.data.request.category_name +
-              " added.",
+            detail: "New wallet " + response.data + " added.",
             sticky: false,
             closable: false,
             life: 5000,
           });
           reset();
           setSubmitting(false);
-          requestIncomeCategories();
         }
       })
       .catch((error) => {
@@ -274,10 +270,10 @@ const IncomeCategory = (props) => {
             <div className="p-grid">
               <div className="p-col-6">
                 <div className="p-card-title p-grid p-nogutter p-justify-between">
-                  View Incomes Categories
+                  View Wallet
                 </div>
                 <div className="p-card-subtitle">
-                  Here are list of income categories.
+                  Here are list of my wallet.
                 </div>
               </div>
               <div className="p-col-6" align="right">
@@ -293,15 +289,15 @@ const IncomeCategory = (props) => {
             </div>
             <br />
             <DataTable
-              value={incomeCategories.categories.data}
+              value={incomeCategories.categories}
               sortField={datatable.sortField}
               sortOrder={datatable.sortOrder}
               responsive={true}
-              paginator={true}
-              rows={datatable.rowsPerPage}
-              rowsPerPageOptions={[5, 10, 20]}
+              // paginator={true}
               totalRecords={incomeCategories.categories.total}
               lazy={true}
+              scrollable
+              scrollHeight="400px"
               first={incomeCategories.categories.from - 1}
               onPage={(e) => {
                 // console.log(e);
@@ -321,15 +317,17 @@ const IncomeCategory = (props) => {
               }}
               className="text-center"
             >
-              <Column field="id" header="Serial" sortable={true} />
+              <Column field="name" header="Wallet Name" />
+
               <Column
-                field="category_name"
-                header="Category Name"
-                sortable={true}
+                field="type"
+                header="Type"
+                body={(rowData) => (rowData.type === 1 ? "CASH" : "BANK")}
               />
+              <Column field="amount" header="Amount" />
               <Column
                 body={(rowData, column) => {
-                  // console.log(rowData);
+                  // console.log(rowData.name);
                   return (
                     <div>
                       <Link to={`/income/category/${rowData.id}/edit`}>

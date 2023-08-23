@@ -57,7 +57,7 @@ const Login = (props) => {
           setState((prev) => ({ ...prev, user: response.data.user }));
           // props.history.replace("/dashboard");
           props.location.state === undefined
-            ? props.history.replace("/dashboard")
+            ? props.history.replace("/expense")
             : props.history.replace(props.location.state.from.pathname);
         }
       })
