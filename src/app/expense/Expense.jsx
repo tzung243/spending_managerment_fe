@@ -57,7 +57,11 @@ const addExpenseValidationSchema = yup.object().shape({
     .nullable()
     .required("Expense category field is required"),
   type: yup.string().nullable().required("Type field is required"),
-  amount: yup.string().required("Expense amount field is required"),
+  amount: yup
+    .number()
+    .integer()
+    .min(1)
+    .required("Expense amount field is required"),
 });
 
 const Expense = (props) => {
@@ -280,7 +284,7 @@ const Expense = (props) => {
     }).then((result) => {
       if (result.value) {
         axios
-          .delete(expenseApiEndpoints.expense + "/" + data.id, {})
+          .delete(expenseApiEndpoints.create + "/" + data.id, {})
           .then((response) => {
             // console.log(response.data);
             if (response.status === 200) {

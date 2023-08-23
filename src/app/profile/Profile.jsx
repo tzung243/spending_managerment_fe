@@ -138,7 +138,7 @@ const Profile = (props) => {
         }
 
         if (error.response.status === 422) {
-          if (error.response.data.data === "password_mismatch") {
+          if (error.response.data.detail === "password_mismatch") {
             messages.show({
               severity: "error",
               detail: "Current password does not match.",
@@ -146,7 +146,7 @@ const Profile = (props) => {
               closable: true,
               life: 5000,
             });
-          } else if (error.response.data.data === "old_password") {
+          } else if (error.response.data.detail === "old_password") {
             messages.show({
               severity: "error",
               detail: "Your new password is same as old password.",
